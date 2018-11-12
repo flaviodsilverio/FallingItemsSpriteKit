@@ -13,6 +13,7 @@ struct ColliderType {
 
     static let Player: UInt32 = 1
     static let Enemy: UInt32 = 2
+    static let Screen: UInt32 = 3
 
 }
 
@@ -40,15 +41,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         player.position = CGPoint(x: 0, y: -200)
         player.physicsBody = SKPhysicsBody(rectangleOf: player.size)
         player.physicsBody?.affectedByGravity = false
-        player.physicsBody?.isDynamic = false
+        player.physicsBody?.isDynamic = true
         player.physicsBody?.categoryBitMask = ColliderType.Player
-        player.physicsBody?.collisionBitMask = ColliderType.Enemy
-        player.physicsBody?.contactTestBitMask = ColliderType.Enemy
+        player.physicsBody?.collisionBitMask = ColliderType.Enemy | ColliderType.Screen
+        player.physicsBody?.contactTestBitMask = ColliderType.Enemy | ColliderType.Screen
 
         self.addChild(player)
 
-//        self.physicsBody = SKPhysicsBody (edgeLoopFrom: self.frame)
 //        self.physicsBody?.friction = 0
+//        self.physicsBody?.categoryBitMask = ColliderType.Screen
 
         pointsLabel = self.childNode(withName: "label") as! SKLabelNode
 
@@ -57,10 +58,27 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
     func addEnemy(){
 
-        let number = arc4random_uniform(2)
-        var enemy =  SKSpriteNode(imageNamed: "mario")
+        let number = arc4random_uniform(4)
+
+        var name = ""
+
+        switch number {
+        case 0:
+            name = "star"
+            break
+        case 1:
+            name = "green"
+            break
+        case 2:
+            name = "red"
+            break
+        default:
+            name = "yellow"
+        }
+
+        var enemy =  SKSpriteNode(imageNamed: name)
         enemy.name = "Enemy"
-        enemy.setScale(0.1)
+        enemy.setScale(0.3)
         enemy.anchorPoint = CGPoint(x: 0.5, y: 0.5)
 
         let number2 = Int.random(in: -200 ... 200)
@@ -76,7 +94,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
         //score = score + 1
 
-        self.run(SKAction.wait(forDuration: 2)) {
+        self.run(SKAction.wait(forDuration: 0.5)) {
             self.addEnemy()
         }
     }
