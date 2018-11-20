@@ -9,6 +9,52 @@
 import SpriteKit
 import GameplayKit
 
+enum ItemType {
+    case normal
+    case bonus
+}
+
+class Enemy: SKSpriteNode {
+
+    init(){
+        let texture = SKTexture(imageNamed: "red")
+        super.init(texture: texture, color: UIColor(), size: texture.size())
+    }
+
+    required init?(coder aDecoder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+
+}
+
+class Item: SKSpriteNode {
+
+    var itemValue: Int = 1
+
+    init(with type: ItemType) {
+
+        var textureName = ""
+
+        switch type {
+        case .bonus:
+            itemValue = 5
+            textureName = "star"
+            break
+        default:
+            itemValue = 1
+            textureName = "green"
+        }
+
+        let texture = SKTexture(imageNamed: textureName)
+        super.init(texture: texture, color: UIColor(), size: texture.size())
+    }
+
+    required init?(coder aDecoder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+}
+
 struct ColliderType {
 
     static let Player: UInt32 = 0x1 << 1
@@ -34,12 +80,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
         self.physicsBody = SKPhysicsBody(edgeLoopFrom: self.frame)
         self.physicsBody?.friction = 0
-        //        self.physicsBody?.affectedByGravity = false
-        //        self.physicsBody?.isDynamic = true
         self.physicsBody?.categoryBitMask = ColliderType.Screen
         self.physicsBody?.collisionBitMask = ColliderType.Player
 
         player = SKSpriteNode(imageNamed: "mario")
+
         player.name = "Player"
         player.setScale(0.1)
         player.anchorPoint = CGPoint(x: 0.5, y: 0.5)
@@ -60,41 +105,34 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
     func addEnemy(){
 
-        let number = arc4random_uniform(4)
+        let number = arc4random_uniform(3)
 
-        var name = ""
+        var sprite = SKSpriteNode()
 
         switch number {
         case 0:
-            name = "star"
-            break
-        case 1:
-            name = "green"
+            sprite = Enemy()
             break
         case 2:
-            name = "red"
+            sprite = Item(with: .bonus)
             break
         default:
-            name = "yellow"
+            sprite = Item(with: .normal)
         }
 
-        var enemy =  SKSpriteNode(imageNamed: name)
-        enemy.name = "Enemy"
-        enemy.setScale(0.3)
-        enemy.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+        sprite.setScale(0.3)
+        sprite.anchorPoint = CGPoint(x: 0.5, y: 0.5)
 
-        let number2 = Int.random(in: -200 ... 200)
+        let number2 = Int.random(in: -180 ... 180)
 
-        enemy.position = CGPoint(x: CGFloat(number2), y: 100)
-        enemy.physicsBody = SKPhysicsBody(rectangleOf: player.size)
-        enemy.physicsBody?.affectedByGravity = true
-        enemy.physicsBody?.categoryBitMask = ColliderType.Enemy
-        enemy.physicsBody?.collisionBitMask = ColliderType.Player
-        enemy.physicsBody?.friction = 10.0
+        sprite.position = CGPoint(x: CGFloat(number2), y: 300)
+        sprite.physicsBody = SKPhysicsBody(rectangleOf: player.size)
+        sprite.physicsBody?.affectedByGravity = true
+        sprite.physicsBody?.categoryBitMask = ColliderType.Enemy
+        sprite.physicsBody?.collisionBitMask = ColliderType.Player
+        sprite.physicsBody?.friction = 10.0
 
-        self.addChild(enemy)
-
-        //score = score + 1
+        self.addChild(sprite)
 
         self.run(SKAction.wait(forDuration: 0.5)) {
             self.addEnemy()
@@ -104,32 +142,27 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     func didBegin(_ contact: SKPhysicsContact) {
 
 
-        var firstBody = SKPhysicsBody()
-        var secondBody = SKPhysicsBody()
+        var item = SKPhysicsBody()
 
         if contact.bodyA.node?.name == "Player" {
-
-            firstBody = contact.bodyA
-            secondBody = contact.bodyB
-
+            item = contact.bodyB
         } else {
-
-            firstBody = contact.bodyB
-            secondBody = contact.bodyA
-
+            item = contact.bodyA
         }
 
-        if firstBody.node?.name == "Player" && secondBody.node?.name == "Enemy" {
+        if let enemy = item.node as? Enemy {
 
-            secondBody.node?.removeFromParent()
-            score += score + 1
+            pointsLabel.text = "GAME OVER"
+            enemy.removeFromParent()
 
-            print("item")
+        } else if let item = item.node as? Item {
+
+            score = score + item.itemValue
+            item.removeFromParent()
 
         } else {
-            print("walls")
+            changeDirection()
         }
-
     }
 
 
@@ -146,9 +179,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        changeDirection()
+    }
 
+    func changeDirection(){
         direction = direction * -1
-
     }
 
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
